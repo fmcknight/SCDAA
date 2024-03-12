@@ -1,60 +1,57 @@
 import numpy as np
+from numpy.linalg import inv
+from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 
-# Define system matrices
-A = np.array([[1, 0.1, 0, 0],
-              [0, 1, 0, 0],
-              [0, 0, 1, 0.1],
-              [0, 0, 0, 1]])
-B = np.array([[0, 0],
-              [0, 0],
-              [0, 0],
-              [0, 0.1]])
-C = np.eye(4)
-D = np.zeros((4,2))
+class LQR:
+    def __init__(self, A, B, Q, R, T):
+        self.A = A  # System dynamics matrix
+        self.B = B  # Input matrix
+        self.Q = Q  # State cost matrix
+        self.R = R  # Input cost matrix
+        self.T = T  # Terminal time
 
-# Define cost matrices
-Q = np.eye(4)
-R = np.eye(2)
+    def solve_ricatti_equation(self, S, t):
+        """
+        Defines the Riccati differential equation.
+        This function will be used with odeint to solve for S over time.
+        """
+        return -(self.A.T @ S + S @ self.A - S @ self.B @ inv(self.R) @ self.B.T @ S + self.Q)
 
-# Solve algebraic Riccati equation
-P = np.matrix(np.zeros((4,4)))
-max_iter = 150
-tolerance = 1e-6
-for _ in range(max_iter):
-    P_new = Q + A.T @ P @ A - A.T @ P @ B @ np.linalg.inv(R + B.T @ P @ B) @ B.T @ P @ A
-    if np.max(np.abs(P_new - P)) < tolerance:
-        break
-    P = P_new
+    def solve_lqr(self):
+        """
+        Solves the LQR problem by integrating the Riccati equation backwards in time.
+        """
+        t_points = np.linspace(0, self.T, 1000)[::-1]  # Time points (reversed for backward integration)
+        S0 = np.zeros(self.Q.shape)  # Terminal condition for S
+        S = odeint(self.solve_ricatti_equation, S0.ravel(), t_points)
+        return S.reshape(-1, *self.Q.shape)
 
-K = np.linalg.inv(R + B.T @ P @ B) @ B.T @ P @ A
+    def policy_iteration(self):
+        """
+        Placeholder for the policy iteration method.
+        This should implement the policy iteration algorithm to solve the LQR problem.
+        """
+        pass  # Implement policy iteration logic here
 
-print("Feedback Gain (K):", K)
+    def visualize_results(self, S):
+        """
+        Visualizes the solution of the Riccati equation or the state/control trajectories.
+        """
+        t_points = np.linspace(0, self.T, len(S))
+        plt.plot(t_points, S[:, 0, 0])  # Example: Plotting first element of S over time
+        plt.xlabel('Time')
+        plt.ylabel('S[0,0]')
+        plt.title('Solution of Riccati Equation over Time')
+        plt.show()
 
-# Simulation
-t = np.linspace(0, 10, 100)
-x0 = np.array([1, 0, 1, 0])  # initial state
+# Example usage
+A = np.array([[0, 1], [-2, -3]])
+B = np.array([[0], [1]])
+Q = np.eye(2)
+R = np.array([[1]])
+T = 5
 
-# Simulate the system with the calculated control gain
-x = np.zeros((4, len(t)))
-u = np.zeros((2, len(t)))
-x[:, 0] = x0
-for i in range(1, len(t)):
-    u[:, i-1] = -K @ x[:, i-1]
-    x[:, i] = A @ x[:, i-1] + B @ u[:, i-1]
-
-# Plot results
-plt.figure()
-plt.subplot(211)
-plt.plot(t, x[0], label='x1')
-plt.plot(t, x[2], label='x2')
-plt.ylabel('States')
-plt.legend()
-
-plt.subplot(212)
-plt.plot(t[:-1], u[0], label='u1')
-plt.plot(t[:-1], u[1], label='u2')
-plt.ylabel('Control Inputs')
-plt.xlabel('Time')
-plt.legend()
-plt.show()
+lqr_system = LQR(A, B, Q, R, T)
+S_solution = lqr_system.solve_lqr()
+lqr_system.visualize_results(S_solution)
