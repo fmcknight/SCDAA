@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import inv
-from scipy.integrate import odeint
+from scipy.integrate import odeint, solve_ivp
 import matplotlib.pyplot as plt
 
 
@@ -26,21 +26,29 @@ class LQR:
         Solves the LQR problem by integrating the Riccati equation backwards in time.
         """
         t_points = np.linspace(0, self.T, 1000)[::-1]  # Time points (reversed for backward integration)
-        ST = np.zeros(self.R.shape)  # Terminal condition for S
-        S = odeint(self.ricatti_ode, ST.ravel(), len(t_points))
-        return S.reshape(-1, self.R.shape)
+        ST = np.zeros((self.R.size,))  # Ensure ST is one-dimensional
+
+        sol = solve_ivp(self.ricatti_ode, t_points, ST, t_eval=t_points, vectorized=False)
+
+        # Access the solution via .y and potentially reshape if necessary
+        S = sol.y.reshape(-1, *self.R.shape)
+
+        return S, t_points
+
+
     
     
-    def visualize_results(self, S):
+
+    def visualize_results(self, S, t_points):
         """
         Visualizes the solution of the Riccati equation or the state/control trajectories.
         """
-        t_points = np.linspace(0, self.T, len(S))
         plt.plot(t_points, S[:, 0, 0])  # Example: Plotting first element of S over time
         plt.xlabel('Time')
         plt.ylabel('S[0,0]')
         plt.title('Solution of Riccati Equation over Time')
         plt.show()
+
     
 
 
@@ -51,11 +59,11 @@ sigma = np.array([[0, 0], [0, 0]])
 alpha = np.array([[0, 0], [0, 0]])
 alpha_s = np.array([[0, 0], [0, 0]])
 C = np.array([[0, 0], [0, 0]])
-D = np.array([[0, 0], [0, 0]])
+D = np.array([[1, 1], [1, 1]])
 R = np.array([[0, 0], [0, 0]])
-T = np.array([[0, 0], [0, 0]])
+T = 15
 
 lqr_system = LQR(H, M, sigma, alpha, alpha_s, C, D, R, T)
-S_solution = lqr_system.solve_lqr()
-lqr_system.visualize_results(S_solution)
+S_solution, t_points = lqr_system.solve_lqr()
+lqr_system.visualize_results(S_solution, t_points)
 
