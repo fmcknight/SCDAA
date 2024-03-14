@@ -2,6 +2,7 @@ import numpy as np
 from numpy.linalg import inv
 from scipy.integrate import odeint, solve_ivp
 import matplotlib.pyplot as plt
+import torch
 
 
 class LQR:
@@ -53,8 +54,15 @@ class LQR:
         plt.ylabel('S[0,0]')
         plt.title('Solution of Riccati Equation over Time')
         plt.show()
-
-
+        
+    
+    def markov_control(self, t, x):
+        S, t_points = self.solve_lqr()
+        a = torch.tensor(len(t), dtype=torch.float32)
+        for t in range(len(t)):
+            for x in range(x.shape[1]):
+                a[t, x] = -inv(D) @ np.transpose(M) @ S[:, t].reshape(2, 2) * x[t, x]
+        return a
 
 # Example usage
 H = np.array([[1, 0], [0, 1]])
