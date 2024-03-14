@@ -37,8 +37,8 @@ class LQR:
             )
 
         # Access the solution via .y and potentially reshape if necessary
-        S = sol.y[:, 0].reshape(2,2)
-
+        S = sol.y
+    
         return S, t_points
 
 
@@ -48,7 +48,7 @@ class LQR:
         Visualizes the solution of the Riccati equation 
         or the state/control trajectories.
         """
-        plt.plot(t_points, S)
+        plt.plot(t_points, S[0, :])
         plt.xlabel('Time')
         plt.ylabel('S[0,0]')
         plt.title('Solution of Riccati Equation over Time')
