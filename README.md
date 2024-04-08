@@ -1,5 +1,4 @@
 ## SCDAA Assignment 2023-24
-#### Ananya Jaishankar (S2538071, 1/3), Frances McKnight (S2535018, 1/3), Luz Pascual (S2571924, 1/3)
 
 ### Team:
 * Ananya Jaishankar (s2538071) - $\frac{1}{3}$
